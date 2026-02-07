@@ -1,0 +1,37 @@
+{
+  "tests": [
+    {
+      "name": "Успешная выдача доната Free Fire",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "game": "freeFire",
+        "playerId": "123456789",
+        "donateName": "Бриллианты 100"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "transactionId": "string",
+        "game": "freeFire",
+        "playerId": "123456789",
+        "donateName": "Бриллианты 100",
+        "message": "string",
+        "estimatedTime": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Ошибка при отсутствии данных",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": {
+        "success": false,
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

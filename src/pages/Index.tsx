@@ -3,10 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('all');
+  const [donateModalOpen, setDonateModalOpen] = useState(false);
+  const [selectedDonate, setSelectedDonate] = useState<{ game: string; name: string } | null>(null);
+  const [playerId, setPlayerId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const freeFireDonates = [
     { id: 1, name: 'Бриллианты 100', price: 'Бесплатно', icon: 'Gem' },
@@ -187,7 +196,13 @@ const Index = () => {
                         <Badge variant="secondary" className="text-lg px-4 py-1">
                           {donate.price}
                         </Badge>
-                        <Button className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground">
+                        <Button 
+                          className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                          onClick={() => {
+                            setSelectedDonate({ game: 'grandMobile', name: donate.name });
+                            setDonateModalOpen(true);
+                          }}
+                        >
                           Получить
                         </Button>
                       </div>
@@ -226,6 +241,85 @@ const Index = () => {
       <footer className="border-t border-border/50 mt-20 py-8 text-center text-muted-foreground">
         <p>© 2026 Game Donates. Все донаты и софты доступны бесплатно</p>
       </footer>
+
+      <Dialog open={donateModalOpen} onOpenChange={setDonateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Получить донат</DialogTitle>
+            <DialogDescription>
+              {selectedDonate?.name} для {selectedDonate?.game === 'freeFire' ? 'Free Fire' : 'Grand Mobile'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="playerId">ID игрока</Label>
+              <Input
+                id="playerId"
+                placeholder="Введите ваш игровой ID"
+                value={playerId}
+                onChange={(e) => setPlayerId(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                if (!playerId) {
+                  toast({
+                    title: 'Ошибка',
+                    description: 'Введите игровой ID',
+                    variant: 'destructive'
+                  });
+                  return;
+                }
+
+                setIsLoading(true);
+                try {
+                  const response = await fetch('https://functions.poehali.dev/ba399f90-64a6-4718-8c50-719d4f47422f', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      game: selectedDonate?.game,
+                      playerId: playerId,
+                      donateName: selectedDonate?.name
+                    })
+                  });
+
+                  const data = await response.json();
+
+                  if (data.success) {
+                    toast({
+                      title: '✅ Донат отправлен!',
+                      description: `${data.message}\nID транзакции: ${data.transactionId}\nОжидаемое время: ${data.estimatedTime}`
+                    });
+                    setDonateModalOpen(false);
+                    setPlayerId('');
+                  } else {
+                    toast({
+                      title: 'Ошибка',
+                      description: data.error || 'Не удалось отправить донат',
+                      variant: 'destructive'
+                    });
+                  }
+                } catch (error) {
+                  toast({
+                    title: 'Ошибка сети',
+                    description: 'Проверьте подключение к интернету',
+                    variant: 'destructive'
+                  });
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Отправка...' : 'Получить донат'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
